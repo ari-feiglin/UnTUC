@@ -41,12 +41,14 @@ error_code_t add_raw(OUT window_t * window, IN void * shape){
     int object_size = 0;
     button_t * button = NULL;
     rect_t * rectangle = NULL;
+    tart_t * tart = NULL;
     object_type_t object_type = 0;
 
     object_type = ((rect_t *)shape)->object_type;
     switch(object_type){
         case BUTTON: button = (button_t *)shape; object_size = sizeof(button_t); break;
         case RECTANGLE: rectangle = (rect_t *)shape; object_size = sizeof(rect_t); break;
+        case TART: tart = (tart_t *)shape; object_size = sizeof(tart_t); break;
         default: return_value = ERROR_CODE_INVALID_INPUT; goto cleanup; break;
     }
 
@@ -133,13 +135,13 @@ cleanup:
 /**
  * @brief: Adds a rectangle to the window
  * @param[OUT] window: The target window
- * @param[IN] x: The x position of the button
- * @param[IN] y: The y position of the button
- * @param[IN] width: The width of the button
- * @param[IN] height: The height of the button
- * @param[IN] r: The red tint of the button
- * @param[IN] g: The green tint of the button
- * @param[IN] b: The blue tint of the button
+ * @param[IN] x: The x position of the rectangle
+ * @param[IN] y: The y position of the rectangle
+ * @param[IN] width: The width of the rectangle
+ * @param[IN] height: The height of the rectangle
+ * @param[IN] r: The red tint of the rectangle
+ * @param[IN] g: The green tint of the rectangle
+ * @param[IN] b: The blue tint of the rectangle
  * 
  * @returns: ERROR_CODE_SUCCESS on success, else an indicative error code
  * @notes: This is just a shell for add_raw. It initializes the structure with the input parameters and calls add_raw.
@@ -158,6 +160,53 @@ error_code_t add_rectangle(OUT window_t * window, IN int x, IN int y, IN int wid
     rectangle.b = b;
     
     return_value = add_raw(window, &rectangle);
+
+    return return_value;
+}
+
+/**
+ * @brief: Adds a rectangle to the window
+ * @param[OUT] window: The target window
+ * @param[IN] x: The x position of the pixel art
+ * @param[IN] y: The y position of the pixel art
+ * @param[IN] file_name: The file path to the TermiArt pixel art file
+ * @param[IN] compressed: If the file is compressed or not
+ * 
+ * @returns: ERROR_CODE_SUCCESS on success, else an indicative error code
+ * @notes: This is just a shell for add_raw. It initializes the structure with the input parameters and calls add_raw.
+ */
+error_code_t add_tart(OUT window_t * window, IN int x, IN int y, IN char * file_name, IN bool compressed){
+    error_code_t return_value = ERROR_CODE_UNINITIALIZED;
+    int width = 0;
+    int height = 0;
+    node_t * canvas = NULL;
+    tart_t tart = {0};
+
+    tart.object_type = TART;
+
+    return_value = get_canvas(file_name, &canvas, &width, &height, compressed);
+    if(ERROR_CODE_SUCCESS != return_value){
+        goto cleanup;
+    }
+
+    tart.canvas = calloc(width * height, sizeof(node_t));
+    if(NULL == tart.canvas){
+        return_value = print_error("ADD_TART: Calloc error", return_value);
+        goto cleanup;
+    }
+    memcpy(tart.canvas, canvas, width * height * sizeof(node_t));
+
+    tart.x = x;
+    tart.y = y;
+    tart.width = width;
+    tart.height = height;
+
+    return_value = add_raw(window, &tart);
+
+cleanup:
+    if(NULL != canvas){
+        free(canvas);
+    }
 
     return return_value;
 }
@@ -203,6 +252,7 @@ void print_window(IN window_t window){
     int text_pointer = 0;
     button_t * button = NULL;
     rect_t * rectangle = NULL;
+    tart_t * tart = NULL;
 
     //system("clear");
     printf("\e[0;0H");
@@ -222,26 +272,45 @@ void print_window(IN window_t window){
 
             for(j=0; j<button->height; j++){
                 for(i=0; i<button->width; i++){
-                    if(button->text[text_pointer] != 0){
-                        printf("\e[48;2;%d;%d;%dm%c%c\e[0m", button->r, button->g, button->b, button->text[text_pointer], (button->text[text_pointer+1] != 0) ? button->text[text_pointer+1] : ' ');
-                        text_pointer += 2;
-                    }
-                    else{
-                        printf("\e[48;2;%d;%d;%dm  \e[0m", button->r, button->g, button->b);
+                    if(button->y + j < window.height && button->x + i < window.width){
+                        if(button->text[text_pointer] != 0){
+                            printf("\e[48;2;%d;%d;%dm%c%c\e[0m", button->r, button->g, button->b, button->text[text_pointer], (button->text[text_pointer+1] != 0) ? button->text[text_pointer+1] : ' ');
+                            text_pointer += 2;
+                        }
+                        else{
+                            printf("\e[48;2;%d;%d;%dm  \e[0m", button->r, button->g, button->b);
+                        }
                     }
                 }
                 printf("\e[%d;%dH", button->y + j + 2, button->x * 2 + 1);
             }
         }
+
         else if(NULL != window.window_array[k] && RECTANGLE == ((rect_t *)window.window_array[k])->object_type){
             rectangle = (rect_t *)window.window_array[k];
             printf("\e[%d;%dH", (rectangle->y+1), rectangle->x * 2 + 1);
 
             for(j=0; j<rectangle->height; j++){
                 for(i=0; i<rectangle->width; i++){
-                    printf("\e[48;2;%d;%d;%dm  \e[0m", rectangle->r, rectangle->g, rectangle->b);
+                    if(rectangle->y + j < window.height && rectangle->x + i < window.width){
+                        printf("\e[48;2;%d;%d;%dm  \e[0m", rectangle->r, rectangle->g, rectangle->b);
+                    }
                 }
                 printf("\e[%d;%dH", rectangle->y + j + 2, rectangle->x * 2 + 1);
+            }
+        }
+
+        else if(NULL != window.window_array[k] && TART == ((tart_t *)window.window_array[k])->object_type){
+            tart = (tart_t *)window.window_array[k];
+            printf("\e[%d;%dH", (tart->y+1), tart->x * 2 + 1);
+
+            for(i=0; i<tart->height; i++){
+                for(j=0; j<tart->width; j++){
+                    if(tart->y + i < window.height && tart->x + j < window.width){
+                        printf("\e[48;2;%d;%d;%dm  \e[0m", tart->canvas[i * tart->width + j].r, tart->canvas[i * tart->width + j].g, tart->canvas[i * tart->width + j].b);
+                    }
+                }
+                printf("\e[%d;%dH", tart->y + i + 2, tart->x * 2 + 1);
             }
         }
     }
@@ -350,6 +419,9 @@ error_code_t free_window(window_t * window){
                 freed_ptr++;
             }
         }
+        else if(TART == ((tart_t *)window->window_array[i])->object_type && NULL != ((tart_t *)window->window_array[i])->canvas){
+            free(((tart_t *)window->window_array[i])->canvas);
+        }
         if(NULL != window->window_array[i]){
             free(window->window_array[i]);
             window->window_array[i] = NULL;
@@ -358,4 +430,87 @@ error_code_t free_window(window_t * window){
 
     free(window->window_array);
     free(window->object_map);
+}
+
+/**
+ * @brief: Gets a canvas from a TermiArt file
+ * @param[IN] file_name: The path to the file that holds the pixel art
+ * @param[OUT] canvas: A pointer to a node_t array that will hold the decompressed pixel art
+ * @param[OUT] width: A pointer to an integer that will hold the width of the pixel art
+ * @param[OUT] height: A pointer to an integer that will hold the height of the pixel art
+ * @param[IN] compressed: If the file is compressed or not
+ * 
+ * @returns: ERROR_CODE_SUCCESS on success, else an indicative error code
+ * @notes: If a TermiArt file was created in TermiArt v0.0.1 or earlier, it won't be compressed.
+ */
+error_code_t get_canvas(char * file_name, node_t ** canvas, int * width, int * height, bool compressed){
+    error_code_t return_value = ERROR_CODE_UNINITIALIZED;
+    FILE * file = NULL;
+    int error_check = 0;
+    int canvas_pointer = 0;
+    unsigned char run_length = 0;
+    int i = 0;
+    node_t node = {0};
+
+    file = fopen(file_name, "r");
+    if(NULL == file){
+        return_value = print_error("OPEN_FILE: Fopen error", ERROR_CODE_COULDNT_OPEN);
+        goto cleanup;
+    }
+
+    error_check = fread(width, sizeof(*width), 1, file);
+    if(-1 == error_check){
+        return_value = print_error("OPEN_FILE: Fread error", ERROR_CODE_COULDNT_READ);
+        goto cleanup;
+    }
+
+    error_check = fread(height, sizeof(*height), 1, file);
+    if(-1 == error_check){
+        return_value = print_error("OPEN_FILE: Fread error", ERROR_CODE_COULDNT_READ);
+        goto cleanup;
+    }
+
+    *canvas = calloc(*width * *height, sizeof(node_t));
+    if(NULL == canvas){
+        return_value = print_error("OPEN_FILE: Calloc error", ERROR_CODE_COULDNT_ALLOCATE_MEMORY);
+        goto cleanup;
+    }
+
+    if(compressed){
+        while(canvas_pointer < *width * *height){
+            error_check = fread(&run_length, sizeof(run_length), 1, file);
+            if(-1 == error_check){
+                return_value = print_error("OPEN_FILE: Fread error", ERROR_CODE_COULDNT_READ);
+                goto cleanup;
+            }
+
+            error_check = fread(&node, sizeof(node), 1, file);
+            if(-1 == error_check){
+                return_value = print_error("OPEN_FILE: Fread error", ERROR_CODE_COULDNT_READ);
+                goto cleanup;
+            }
+
+            for(i=0; i<run_length; i++){
+                memcpy(&((*canvas)[canvas_pointer + i]), &node, sizeof(node));
+            }
+
+            canvas_pointer += run_length;
+        }
+    }
+    else{
+        error_check = fread(*canvas, *height * *width, sizeof(node), file);
+        if(-1 == error_check){
+            return_value = print_error("OPEN_FILE: Fread error", ERROR_CODE_COULDNT_READ);
+            goto cleanup;
+        }
+    }
+
+    return_value = ERROR_CODE_SUCCESS;
+
+cleanup:
+    if(NULL != file){
+        fclose(file);
+    }
+
+    return return_value;
 }

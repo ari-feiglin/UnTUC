@@ -4,9 +4,9 @@ UnTUC (Unnamed Text-based User Interafce Creator) provides a simple method for c
 
 **A tutorial is provided in `Usage.md`.**  
 
-## <u>**VERSION 0.0.0**</u>  
-Version 0.0.0 (v0.0.0) was released on December 1, 2020.  
-UnTUC v0.0.0 provides the basic essentials for creating a semi-working pseudo-GUI. It does not provide support for mouse input.  
+## <u>**VERSION 0.1.0**</u>  
+Version 0.1.0 (v0.1.0) was released on December 4, 2020.  
+UnTUC v0.1.0 provides the basic essentials for creating a semi-working pseudo-GUI. It does not provide support for mouse input.  
 
 ### <u>**DEPENDENCIES**</u>  
 * A terminal that supports ANSI escape sequences (especially the ones for cursor movement and rgb colors).  
@@ -40,7 +40,8 @@ $ make -f Makefile.bin
 ```
 
 ### <u>**POSSIBLE UPCOMING FEATURES**</u>  
-* Window overflow prevention
-* TermiArt compatibility
+- [x] Window overflow prevention
+- [x] TermiArt compatibility
+- [ ] Simplify adding objects
 
 **Thank you for visiting UnTUC!**

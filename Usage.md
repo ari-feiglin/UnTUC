@@ -4,9 +4,13 @@
 
 In order to create a Text-based User Interface (TUI), you must first understand a bit of how UnTUC works.  
 
-## <u>**UnTUC structures**</u>
 <br />
 
+***
+
+## <u>**UnTUC structures**</u>
+
+***
 ### **window_t**  
 
 UnTUC provides a structure for a terminal "window". It is defined in `include/UnTUC.h` like so:  
@@ -36,6 +40,9 @@ For example, the following object map (written by taking `width` and `height` in
 
 <br />
 
+<br />
+
+***
 ### **rect_t**  
 
 The rectangle_t structure is an object that corresponds to a rectangle on the GUI. The structure is defined in `include/UnTUC.h` like so:  
@@ -58,6 +65,9 @@ typedef struct rect_s{
 * `width` and `height` are the width and height of the rectangle, respectivley.
 * `r`, `g`, and `b` are the color tints of the rectangle.  
 
+<br />
+
+***
 ### **button_t**  
 
 The button_t structure is an object that corresponds to a button on the window. The structure is defined in `include/UnTUC.h` like so:  
@@ -83,10 +93,41 @@ typedef struct button_s{
 * `text` is the text that will be displayed on the button.
 * `action` is a function pointer to the function that should be called when the button is clicked. It must take a **window_t** pointer and **button_t** as parameters (in order to manipulate the window). It also must take a void pointer to an array of any other arguments you would like to pass.  
 
+<br />
+
+***
+### **tart_t**
+
+The tart_t structure is an object that corresponds to a picture on the window. The structure is defined in `include/UnTUC.h` like so:  
+
+```c
+typedef struct tart_s{
+    object_type_t object_type;
+    int x;
+    int y;
+    int width;
+    int height;
+    node_t * canvas;
+}tart_t;
+```
+
+Tart pictures are pixel art drawings created by the TermiArt System. It can be found here at [the TermiArt repository on GitHub](https://github.com/ari-feiglin/Termi-Art).
+
+* `object_type` is the type of object it is (this should always be set to TART)
+* The next 4 elements are the same as the same elements in the **rect_t** and **button_t** structures.
+* `canvas` is an array of nodes in the pixel art (more details below in **get_canvas**)
+
+<br />
+
+***
+
 ## <u>**UnTUC Functions**</u>  
 
 The following functions are all declared in `include/UnTUC.h` and defined in `src/UnTUC.c`.
 
+<br />
+
+***
 ### **create_window**
 This function initializes a window_t object given a desired width and height.
 
@@ -97,6 +138,9 @@ error_code_t create_window(window_t * window, int width, int height)
 * `window`: a pointer to the window object to initialize
 * `width` and `height`: the desired width and height of the window, respectivley.
 
+<br />
+
+***
 ### **add_raw**
 This function adds a shape object structure to a window.
 
@@ -108,6 +152,9 @@ error_code_t add_raw(window_t * window, void * shape)
 
 This function updates window's arrays according to the object added.
 
+<br />
+
+***
 ### **add_button**
 This function initializes a `button_t` object and passes it to **add_raw**
 
@@ -121,6 +168,9 @@ error_code_t add_button(window_t * window, int x, int y, int width, int height, 
 * `text`: The text to add to the button.
 * `action`: A function pointer to the function to call after the button is clicked.  
 
+<br />
+
+***
 ### **add_rectangle**
 This function initializes a `rect_t` object and passes it to **add_raw**
 
@@ -128,10 +178,40 @@ This function initializes a `rect_t` object and passes it to **add_raw**
 error_code_t add_rectangle(window_t * window, int x, int y, int width, int height, unsigned char r, unsigned char g, unsigned char b)
 ```
 * `window`: A pointer to the window to add the object to.
-* `x` and `y`: the x and y coordinates, respectivley, to add the button to.
-* `width` and `height`: The width and height of the button, respectivley.
-* `r`, `g`, and `b`: The red, green, and blue tints of the button.
+* `x` and `y`: the x and y coordinates, respectivley, to add the rectangle to.
+* `width` and `height`: The width and height of the rectangle, respectivley.
+* `r`, `g`, and `b`: The red, green, and blue tints of the rectangle.
 
+<br />
+
+***
+### **add_tart**
+This function initializes a `tart_t` object and passes it to **add_raw**
+
+```c
+error_code_t add_tart(window_t * window, int x, int y, char * file_name, bool compressed)
+``` 
+* `window`: A pointer to the window to add the object to.
+* `x` and `y`: the x and y coordinates, respectivley, to add the pixel art to.
+* `file_name`: The path to the file that has the pixel art.
+
+<br />
+
+***
+### **get_canvas**
+This function extracts a canvas (node_t array) from a termiArt file.
+
+```c
+error_code_t get_canvas(char * file_name, node_t ** canvas, int * width, int * height, bool compressed);
+```
+* `file_name`: The file path to the TermiArt pixel art file.
+* `canvas`: A pointer to a canvas (a pointer to a node_t array). A node is a structure of 3 bytes that holds the rgb of a pixel on the canvas. For more information, visit [the TermiArt repository on GitHub](https://github.com/ari-feiglin/Termi-Art).
+* `width` and `height`: Pointers to integers that will hold the width and height of the canvas.
+* `compressed`: If the TermiArt file is compressed or not (if the file was made with TermiArt v0.0.1 or earlier, it won't be compressed)
+
+<br />
+
+***
 ### **print_window**
 This function prints the window to STDOUT.
 
@@ -140,6 +220,9 @@ void print_window(window_t window)
 ```
 * `window`: The window to print.
 
+<br />
+
+***
 ### **print_map**
 This function prints the `object_map` of a window. This is pretty unnecessary and was only made for debugging purposes.
 
@@ -148,6 +231,9 @@ void print_map(window_t window)
 ```
 * `window`: The window whose map you wish to print.
 
+<br />
+
+***
 ### **free_window**
 This function frees all memory taken up by the terminal (save the `window_t` structure itself if it was dynamically allocated).
 
@@ -156,6 +242,9 @@ error_code_t free_window(window_t * window)
 ```
 * `window`: A pointer to the window to free.
 
+<br />
+
+***
 ### **resize_terminal**
 This function resizes the terminal based on the given parameters.
 
@@ -164,6 +253,9 @@ void resize_terminal(int x, int y)
 ```
 * `x` and `y`: The width and height of the terminal, respectivley.
 
+<br />
+
+***
 ### **run_window**
 This function prints and manages a window. Because I wrote it, it isn't customizable, and should only be used if you don't require too much customization. Because of this, you cannot pass arguments to actions (`window` and `button` are passed, but not `args`). Use wasd to move the cursor.
 
@@ -172,6 +264,9 @@ void run_window(window_t * window)
 ```
 * `window`: A pointer to the window to print.
 
+<br />
+
+***
 ## <u>**EXAMPLE PROGRAM**</u>  
 The following is a program for a simple cookie clicker game. (There are seperate buttons for gaining cookies and printing them just to demonstrate how UnTUC works).
 
