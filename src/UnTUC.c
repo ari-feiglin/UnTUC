@@ -1,5 +1,7 @@
 #include "UnTUC.h"
 
+void signal_handler(int signum){}
+
 /**
  * @brief: Resizes the terminal
  * @param[IN] x: Width of terminal
@@ -104,7 +106,7 @@ cleanup:
  * @returns: ERROR_CODE_SUCCESS on success, else an indicative error code
  * @notes: This is just a shell for add_raw. It initializes the structure with the input parameters and calls add_raw.
  */
-error_code_t add_button(OUT window_t * window, IN int x, IN int y, IN int width, IN int height, IN unsigned char r, IN unsigned char g, IN unsigned char b, IN char * text, IN int (*action)(window_t * window, button_t button, void * arguments)){
+error_code_t add_button(window_t * window, int x, int y, int width, int height, unsigned char r, unsigned char g, unsigned char b, char * text, int (*action)(window_t * window, int index, void * arguments)){
     error_code_t return_value = ERROR_CODE_UNINITIALIZED;
     button_t button = {0};
     
@@ -276,6 +278,9 @@ void print_window(IN window_t window){
                         if(button->text[text_pointer] != 0){
                             printf("\e[48;2;%d;%d;%dm%c%c\e[0m", button->r, button->g, button->b, button->text[text_pointer], (button->text[text_pointer+1] != 0) ? button->text[text_pointer+1] : ' ');
                             text_pointer += 2;
+                            if(button->text[text_pointer-1] == 0){
+                                text_pointer--;
+                            }
                         }
                         else{
                             printf("\e[48;2;%d;%d;%dm  \e[0m", button->r, button->g, button->b);
@@ -334,6 +339,7 @@ void run_window(IN window_t * window){
     char input = 0;
     button_t * button = NULL;
     bool run = true;
+    __sighandler_t sig_handler = NULL;
 
     system("clear");
     change_cursor(true);
@@ -342,6 +348,12 @@ void run_window(IN window_t * window){
 
     print_window(*window);
     printf("\e[%d;%dH", cursor_y+1, cursor_x * 2 + 1);
+
+    sig_handler = signal(SIGINT, signal_handler);
+    if(SIG_ERR == sig_handler){
+        print_error("RUN_WINDOW: Signal error", 0);
+        goto cleanup;
+    }
 
     while(run){
         input = getchar();
@@ -357,7 +369,7 @@ void run_window(IN window_t * window){
                     button = (button_t *)window->window_array[button_index];
 
                     if(BUTTON == button->object_type && NULL != button->action ){
-                        button->action(window, *button, NULL);
+                        button->action(window, button_index, NULL);
                     }
                 }
 
@@ -382,6 +394,13 @@ void run_window(IN window_t * window){
         printf("\e[%d;%dH", cursor_y+1, cursor_x * 2 + 1);
     }
 
+    sig_handler = signal(SIGINT, sig_handler);
+    if(SIG_ERR == sig_handler){
+        print_error("RUN_WINDOW: Signal error", 0);
+        goto cleanup;
+    }
+
+cleanup:
     change_echo(true);
 }
 
@@ -392,7 +411,7 @@ void run_window(IN window_t * window){
  * @returns: ERROR_CODE_SUCCESS on success, else an indicative error code
  * @notes: This doesn't free the window structure if it was dynamically allocated.
  */
-error_code_t free_window(window_t * window){
+error_code_t free_window(OUT window_t * window){
     int i = 0;
     int j = 0;
     int freed_ptr = 0;
@@ -443,7 +462,7 @@ error_code_t free_window(window_t * window){
  * @returns: ERROR_CODE_SUCCESS on success, else an indicative error code
  * @notes: If a TermiArt file was created in TermiArt v0.0.1 or earlier, it won't be compressed.
  */
-error_code_t get_canvas(char * file_name, node_t ** canvas, int * width, int * height, bool compressed){
+error_code_t get_canvas(IN char * file_name, OUT node_t ** canvas, OUT int * width, OUT int * height, IN bool compressed){
     error_code_t return_value = ERROR_CODE_UNINITIALIZED;
     FILE * file = NULL;
     int error_check = 0;
@@ -512,5 +531,36 @@ cleanup:
         fclose(file);
     }
 
+    return return_value;
+}
+
+/**
+ * @brief: Gets a button from a window based on an index
+ * @param[IN] window: The target window
+ * @param[IN] index: The index of the button in the window's window_array
+ * @param[OUT] button: A (non-NULL) pointer to a button struct
+ * 
+ * @returns: ERROR_CODE_SUCCESS on success, else an indicative error code
+ */
+error_code_t get_button(IN window_t * window, IN int index, OUT button_t * button){
+    error_code_t return_value = ERROR_CODE_UNINITIALIZED;
+    int text_len = 0;
+    char * text = NULL;
+
+    memcpy(button, window->window_array[index], sizeof(button_t));
+    text = button->text;
+
+    text_len = strnlen(button->text, BUFFER_SIZE);
+    button->text = malloc(text_len+1);
+    if(NULL == button){
+        return_value = print_error("GET_BUTTON: Malloc error", ERROR_CODE_COULDNT_ALLOCATE_MEMORY);
+        goto cleanup;
+    }
+
+    memcpy(button->text, text, text_len+1);
+
+    return_value = ERROR_CODE_SUCCESS;
+
+cleanup:
     return return_value;
 }

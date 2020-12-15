@@ -4,9 +4,9 @@ UnTUC (Unnamed Text-based User Interafce Creator) provides a simple method for c
 
 **A tutorial is provided in `Usage.md`.**  
 
-## <u>**VERSION 0.1.0**</u>  
-Version 0.1.0 (v0.1.0) was released on December 4, 2020.  
-UnTUC v0.1.0 provides the basic essentials for creating a semi-working pseudo-GUI. It does not provide support for mouse input.  
+## <u>**VERSION 0.1.1**</u>  
+Version 0.1.1 (v0.1.1) was released on December 15, 2020.  
+UnTUC v0.1.1 provides the basic essentials for creating a semi-working pseudo-GUI. It does not provide support for mouse input.  
 
 ### <u>**DEPENDENCIES**</u>  
 * A terminal that supports ANSI escape sequences (especially the ones for cursor movement and rgb colors).  
@@ -39,9 +39,15 @@ $ cd /path/to/UnTUC/directory
 $ make -f Makefile.bin
 ```
 
+### **WHAT'S NEW IN VERSION 0.1.1?**
+* Button actions now get the index of the button object instead of a button object, allowing for easier manipulation of the button. Because of this, a new simple function was added:
+    * The `get_button` function was added to get a button from a window based on an index
+* Created a signal handler for in `run_window` sigint (rendering it useless) in order to make sure that all memory can be properly free'd and echo returned to normal. To quit `run_window`, you must now hit q.
+
 ### <u>**POSSIBLE UPCOMING FEATURES**</u>  
 - [x] Window overflow prevention
 - [x] TermiArt compatibility
 - [ ] Simplify adding objects
+- [ ] Update object_map when a button or other object is moved
 
 **Thank you for visiting UnTUC!**

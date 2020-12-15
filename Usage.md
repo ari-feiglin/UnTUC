@@ -84,14 +84,14 @@ typedef struct button_s{
     unsigned char b;
     char * text;
 
-    int (*action)(window_t * window, struct button_s button, void * args);
+    int (*action)(window_t * window, int index, void * args);
 }button_t;
 ```  
 
 * `object_type` is the type of object it is (this should always be set to BUTTON)
 * The next 7 elements are the same as the elements in the **rect_t** structure. (From `x` to `b`)  
 * `text` is the text that will be displayed on the button.
-* `action` is a function pointer to the function that should be called when the button is clicked. It must take a **window_t** pointer and **button_t** as parameters (in order to manipulate the window). It also must take a void pointer to an array of any other arguments you would like to pass.  
+* `action` is a function pointer to the function that should be called when the button is clicked. It must take a **window_t** pointer and an index as parameters (in order to manipulate the window). It also must take a void pointer to an array of any other arguments you would like to pass.  
 
 <br />
 
@@ -198,6 +198,18 @@ error_code_t add_tart(window_t * window, int x, int y, char * file_name, bool co
 <br />
 
 ***
+### **get_button**
+This function gets a button from a window based on an index provided.
+```c
+error_code_t get_button(window_t * window, int index, button_t * button);
+```
+* `window`: A pointer to the window to get the button from.
+* `index`: The index of the button in the window's window_array.
+* `button`: A (non-NULL) pointer to a button struct to fill
+
+<br />
+
+***
 ### **get_canvas**
 This function extracts a canvas (node_t array) from a termiArt file.
 
@@ -257,7 +269,7 @@ void resize_terminal(int x, int y)
 
 ***
 ### **run_window**
-This function prints and manages a window. Because I wrote it, it isn't customizable, and should only be used if you don't require too much customization. Because of this, you cannot pass arguments to actions (`window` and `button` are passed, but not `args`). Use wasd to move the cursor.
+This function prints and manages a window. Because I wrote it, it isn't customizable, and should only be used if you don't require too much customization. Because of this, you cannot pass arguments to actions (`window` and `index` are passed, but not `args`). Use wasd to move the cursor, enter to click, and q to exit.
 
 ```c
 void run_window(window_t * window)
@@ -265,6 +277,10 @@ void run_window(window_t * window)
 * `window`: A pointer to the window to print.
 
 <br />
+
+***
+## <u>**IMPORTANT NOTES**<u>
+Manipulating a button's (that is in the window's window_array) position will not update the window's object_map!
 
 ***
 ## <u>**EXAMPLE PROGRAM**</u>  
@@ -275,11 +291,11 @@ The following is a program for a simple cookie clicker game. (There are seperate
 
 int cookies = 0;
 
-int increase_cookies(window_t * window, button_t button, void * args){
+int increase_cookies(window_t * window, int index, void * args){
     cookies++;
 }
 
-int print_cookies(window_t * window, button_t button, void * args){
+int print_cookies(window_t * window, int index, void * args){
     printf("\e[%d;0H", window->height+2);
     printf("\e[1mNumber of cookies: %d\n", cookies);
 }
